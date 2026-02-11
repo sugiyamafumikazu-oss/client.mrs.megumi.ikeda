@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>面談議事録＆アクションプラン：池田恵様</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        .timeline-line {
+            position: absolute;
+            left: 24px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #e2e8f0;
+            z-index: 0;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .active-tab {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 700;
+        }
+        .step-circle {
+            transition: all 0.3s ease;
+        }
+        .step-item:hover .step-circle {
+            transform: scale(1.1);
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <!-- Chosen Palette: "Trust & Calm" - Slate (Background), Blue (Primary Action), Teal (Success/Medical), Amber (Warning/Caution) -->
+    <!-- Application Structure Plan: 
+         1. Header: Quick context (Client Name, Date).
+         2. Dashboard Grid:
+            - Left Col: Case Summary & Interactive Timeline (The core issue is the history).
+            - Right Col: Analysis Charts (Visualizing the Grade 2 vs 3 issue) & Action Checklist.
+         3. Why: The transcript emphasizes the complexity of the "First Diagnosis Date" (Shoshinbi). 
+            Separating the Timeline allows the user to explore each clinic's status specifically. 
+            The Action Plan is crucial because concrete tasks (calling clinics) were assigned.
+    -->
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-slate-800">📋 障害年金申請 面談記録</span>
+                    <span class="ml-4 px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">相談者：池田 恵 様</span>
+                    <span class="ml-2 px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full">面談日：2025-12-01</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.print()" class="text-slate-500 hover:text-blue-600 transition">
+                        🖨️ 印刷/PDF保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Intro Section -->
+        <div class="mb-8 bg-white p-6 rounded-lg card-shadow border-l-4 border-blue-500">
+            <h2 class="text-xl font-bold mb-2">本日の概要とゴール</h2>
+            <p class="text-slate-600 mb-4 leading-relaxed">
+                本アプリケーションは、池田恵様との面談内容（2025年12月1日）を基に、障害年金申請に向けた重要事項を整理したものです。
+                特に最重要課題である<strong>「初診日の確定」</strong>と<strong>「受診状況等証明書の取得」</strong>に焦点を当て、
+                過去の通院歴と現在のアクションプランを可視化しています。
+            </p>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <div class="bg-blue-50 px-3 py-2 rounded text-blue-700"><strong>傷病名想定:</strong> 双極性障害II型</div>
+                <div class="bg-blue-50 px-3 py-2 rounded text-blue-700"><strong>現在の就労:</strong> 週3-4日 / 1日4時間</div>
+                <div class="bg-amber-50 px-3 py-2 rounded text-amber-700"><strong>重要課題:</strong> カルテ保存期間経過による証明の難航</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- LEFT COLUMN: Timeline & History (2/3 width) -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- Timeline Section -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-slate-800">📅 受診履歴と証明書取得状況</h3>
+                        <span class="text-xs text-slate-500">各項目をクリックして詳細・アクションを確認</span>
+                    </div>
+
+                    <div class="relative pl-4" id="timeline-container">
+                        <!-- Dynamic content populated by JS -->
+                        <div class="timeline-line"></div>
+                    </div>
+                </div>
+
+                <!-- Meeting Minutes / Key Points -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">📝 面談メモ・重要確認事項</h3>
+                    
+                    <div class="mb-4">
+                        <div class="flex border-b border-slate-200">
+                            <button class="px-4 py-2 text-sm font-medium active-tab focus:outline-none" id="tab-btn-1" onclick="switchTab(1)">初診日について</button>
+                            <button class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 focus:outline-none" id="tab-btn-2" onclick="switchTab(2)">現在の就労・生活</button>
+                            <button class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 focus:outline-none" id="tab-btn-3" onclick="switchTab(3)">障害等級の見通し</button>
+                        </div>
+                    </div>
+
+                    <div id="tab-content-1" class="tab-content block animate-fade-in">
+                        <ul class="list-disc pl-5 space-y-2 text-sm text-slate-700 leading-relaxed">
+                            <li><strong>20歳前の受診:</strong> 18-20歳頃に三島のメンタルクリニックを受診。カルテ保存期間（5年）を経過している可能性が高い。</li>
+                            <li><strong>「社会的治癒」の検討:</strong> 治療の中断期間が長ければ、再受診時を初診日として扱える可能性があるが、今回は断続的に受診歴があるため慎重な判断が必要。</li>
+                            <li><strong>風邪などでの受診:</strong> 内科等の受診は精神疾患の初診日としては扱われないため除外可能（プラス要素）。</li>
+                            <li><strong>旧姓の確認:</strong> 当時は「鈴木」姓。問い合わせ時は旧姓を伝える必要がある。</li>
+                        </ul>
+                    </div>
+                    <div id="tab-content-2" class="tab-content hidden animate-fade-in">
+                        <ul class="list-disc pl-5 space-y-2 text-sm text-slate-700 leading-relaxed">
+                            <li><strong>就労状況:</strong> 週3〜4日、1日4時間のパートタイム勤務。</li>
+                            <li><strong>業務内容への配慮:</strong> 会社からの配慮を受けて勤務している状態。</li>
+                            <li><strong>日常生活:</strong> 仕事以外の時間は疲労回復に充てており、家事等の日常生活能力に制限がある状態と推測される。</li>
+                        </ul>
+                    </div>
+                    <div id="tab-content-3" class="tab-content hidden animate-fade-in">
+                        <ul class="list-disc pl-5 space-y-2 text-sm text-slate-700 leading-relaxed">
+                            <li><strong>障害厚生年金3級:</strong> 初診日が厚生年金加入期間（会社員時代）であれば、現在の就労状況でも受給の可能性が高い。</li>
+                            <li><strong>障害基礎年金2級:</strong> 初診日が20歳前（国民年金）の場合、2級以上が必要。現在の就労状況（パート勤務）だと2級認定はハードルが高い。</li>
+                            <li><strong>結論:</strong> 「初診日がいつか」によって適用される年金制度が変わるため、初診日の確定が最優先。</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Analysis & Action (1/3 width) -->
+            <div class="lg:col-span-1 space-y-8">
+                
+                <!-- Action Plan Widget -->
+                <div class="bg-blue-50 rounded-lg card-shadow p-6 border border-blue-100">
+                    <h3 class="text-lg font-bold text-blue-900 mb-4">🚀 次のアクション (To-Do)</h3>
+                    <div class="space-y-3" id="todo-list">
+                        <!-- JS Generated -->
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-blue-200">
+                        <p class="text-xs text-blue-700 text-center font-bold">進捗率: <span id="progress-text">0%</span></p>
+                        <div class="w-full bg-blue-200 rounded-full h-2.5 mt-1">
+                            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Chart 1: Pension Type Logic -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">年金制度の適用ロジック</h3>
+                    <p class="text-xs text-slate-500 mb-4">初診日による受給要件の違い</p>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="pensionChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-xs text-slate-500 bg-slate-50 p-2 rounded">
+                        <p>※厚生年金であれば3級（就労可）も対象になりますが、国民年金（20歳前含む）は2級以上（原則就労困難）が必要です。</p>
+                    </div>
+                </div>
+
+                <!-- Analysis Chart 2: Work/Life Balance -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">現在の生活負荷バランス</h3>
+                    <p class="text-xs text-slate-500 mb-4">就労と休息の割合（申告ベース）</p>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="lifeChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center">
+                         <p class="text-sm font-bold text-slate-700">診断書作成のポイント</p>
+                         <p class="text-xs text-slate-500">「働けている」ではなく「仕事以外は休息が必要」であることを医師に伝える必要があります。</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        // Data Store
+        const appData = {
+            client: "池田 恵 (旧姓: 鈴木)",
+            timeline: [
+                {
+                    period: "18歳〜20歳頃",
+                    clinic: "三島メンタルクリニック (静岡)",
+                    status: "warning",
+                    detail: "初診日の有力候補。カルテ保存義務期間（5年）を経過しており、破棄されている可能性大。診察券や受付簿が残っていないか要確認。",
+                    action: "電話確認：旧姓（鈴木）で在籍確認。診察券の有無。",
+                    type: "国民年金期間"
+                },
+                {
+                    period: "22歳〜23歳頃",
+                    clinic: "表参道のクリニック (東京)",
+                    status: "danger",
+                    detail: "すでに閉院しているとの情報。証明書の取得は絶望的。",
+                    action: "閉院情報の裏付けのみ行う。",
+                    type: "厚生年金期間？"
+                },
+                {
+                    period: "その後",
+                    clinic: "松戸のクリニック (埼玉/千葉)",
+                    status: "neutral",
+                    detail: "詳細不明だが、今回は初診日の候補としては順位が低い。",
+                    action: "必要に応じて調査。",
+                    type: "不明"
+                },
+                {
+                    period: "数年前",
+                    clinic: "Kメンタルクリニック (沼津)",
+                    status: "warning",
+                    detail: "初診証明が取れない場合の「2番目の病院」として重要。受診状況等証明書の依頼候補。",
+                    action: "受診状況等証明書の作成依頼。",
+                    type: "国民/厚生"
+                },
+                {
+                    period: "現在",
+                    clinic: "藤枝メンタルクリニック",
+                    status: "success",
+                    detail: "現在の主治医。診断書の作成場所。就労状況等を正しく伝える必要がある。",
+                    action: "診断書の作成依頼。",
+                    type: "現在"
+                }
+            ],
+            todos: [
+                { id: 1, text: "三島メンタルCLへ電話 (旧姓で検索依頼)", completed: false },
+                { id: 2, text: "KメンタルCL (沼津) へ受診証明依頼", completed: false },
+                { id: 3, text: "藤枝メンタルCLへ診断書依頼", completed: false },
+                { id: 4, text: "病歴・就労状況等申立書の下書き作成", completed: false }
+            ]
+        };
+
+        // --- Render Functions ---
+
+        // 1. Render Timeline
+        function renderTimeline() {
+            const container = document.getElementById('timeline-container');
+            // Keep the line
+            container.innerHTML = '<div class="timeline-line"></div>';
+
+            appData.timeline.forEach((item, index) => {
+                const node = document.createElement('div');
+                node.className = 'relative z-10 mb-8 pl-8 step-item group cursor-pointer';
+                
+                // Color logic based on status
+                let colorClass = "bg-slate-200 border-slate-400";
+                let icon = "⚪";
+                if(item.status === 'warning') { colorClass = "bg-amber-100 border-amber-500 text-amber-700"; icon = "⚠️"; }
+                if(item.status === 'danger') { colorClass = "bg-red-100 border-red-500 text-red-700"; icon = "🚫"; }
+                if(item.status === 'success') { colorClass = "bg-teal-100 border-teal-500 text-teal-700"; icon = "🏥"; }
+
+                node.innerHTML = `
+                    <div class="step-circle absolute left-0 top-1 w-12 h-12 rounded-full border-2 flex items-center justify-center bg-white ${colorClass.replace('bg-', 'border-')} shadow-sm text-xl">
+                        ${icon}
+                    </div>
+                    <div class="bg-white p-4 rounded border border-slate-200 hover:border-blue-400 hover:shadow-md transition ml-6" onclick="toggleDetail('detail-${index}')">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">${item.period}</span>
+                                <h4 class="font-bold text-slate-800 text-lg">${item.clinic}</h4>
+                                <span class="inline-block px-2 py-0.5 rounded text-xs mt-1 bg-slate-100 text-slate-600">${item.type}</span>
+                            </div>
+                            <span class="text-slate-400 text-xs">▼ 詳細</span>
+                        </div>
+                        <div id="detail-${index}" class="hidden mt-3 pt-3 border-t border-slate-100 text-sm text-slate-600 animate-fade-in">
+                            <p class="mb-2"><strong>状況:</strong> ${item.detail}</p>
+                            <p class="bg-blue-50 text-blue-800 p-2 rounded"><strong>アクション:</strong> ${item.action}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(node);
+            });
+        }
+
+        // 2. Render Checkbox List
+        function renderTodos() {
+            const list = document.getElementById('todo-list');
+            list.innerHTML = '';
+            let completedCount = 0;
+
+            appData.todos.forEach(todo => {
+                if(todo.completed) completedCount++;
+                const item = document.createElement('div');
+                item.className = 'flex items-center space-x-3 bg-white p-3 rounded border border-slate-200 shadow-sm hover:bg-slate-50 transition cursor-pointer';
+                item.onclick = () => toggleTodo(todo.id);
+                item.innerHTML = `
+                    <div class="flex-shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center ${todo.completed ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}">
+                        ${todo.completed ? '<span class="text-white text-xs">✓</span>' : ''}
+                    </div>
+                    <span class="${todo.completed ? 'line-through text-slate-400' : 'text-slate-700'} text-sm font-medium">${todo.text}</span>
+                `;
+                list.appendChild(item);
+            });
+
+            // Update Progress Bar
+            const percent = Math.round((completedCount / appData.todos.length) * 100);
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('progress-text').innerText = `${percent}%`;
+        }
+
+        // --- Interaction Logic ---
+
+        function toggleDetail(id) {
+            const el = document.getElementById(id);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+
+        function toggleTodo(id) {
+            const todo = appData.todos.find(t => t.id === id);
+            if(todo) {
+                todo.completed = !todo.completed;
+                renderTodos();
+            }
+        }
+
+        function switchTab(tabIndex) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active style from buttons
+            document.querySelectorAll('button[id^="tab-btn-"]').forEach(btn => {
+                btn.classList.remove('active-tab', 'text-blue-600');
+                btn.classList.add('text-slate-500');
+            });
+
+            // Show selected content
+            document.getElementById(`tab-content-${tabIndex}`).classList.remove('hidden');
+            // Add active style
+            const activeBtn = document.getElementById(`tab-btn-${tabIndex}`);
+            activeBtn.classList.add('active-tab', 'text-blue-600');
+            activeBtn.classList.remove('text-slate-500');
+        }
+
+        // --- Charts Initialization ---
+
+        function initCharts() {
+            // Chart 1: Pension Logic (Bar)
+            const ctxPension = document.getElementById('pensionChart').getContext('2d');
+            new Chart(ctxPension, {
+                type: 'bar',
+                data: {
+                    labels: ['初診: 厚生年金', '初診: 国民年金'],
+                    datasets: [
+                        {
+                            label: '受給可能な等級範囲',
+                            data: [3, 2], // Visual representation of coverage. 3 means covers 1-3, 2 means covers 1-2.
+                            backgroundColor: ['#3b82f6', '#f59e0b'],
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if(context.dataIndex === 0) return '1級・2級・3級 (就労していても受給可能性大)';
+                                    return '1級・2級のみ (就労していると厳しい)';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            max: 3.5
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Work/Life Balance (Doughnut)
+            const ctxLife = document.getElementById('lifeChart').getContext('2d');
+            new Chart(ctxLife, {
+                type: 'doughnut',
+                data: {
+                    labels: ['就労時間 (週12-16H)', '休息・療養', '家事・その他'],
+                    datasets: [{
+                        data: [15, 60, 25], // Estimated percentage based on transcript "working 3-4 days, 4 hours"
+                        backgroundColor: [
+                            '#94a3b8', // Work (Grey - limited)
+                            '#3b82f6', // Rest (Blue - Major need)
+                            '#cbd5e1'  // Other
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTimeline();
+            renderTodos();
+            initCharts();
+        });
+
+    </script>
+    
+    <!-- Visualization & Content Choices:
+         1. Timeline (HTML/JS): 
+            - Goal: Organize complex clinic history and "Shoshinbi" gaps.
+            - Justification: A vertical list is better than a chart for text-heavy clinic details.
+            - Interaction: Expandable details to keep the view clean but allow deep dive into specific clinic tasks.
+         2. Bar Chart (Chart.js): 
+            - Goal: Compare Pension System Rules.
+            - Justification: Visualizing "Coverage" (Level 3 vs Level 2) makes the "Why we need proof" argument instant.
+         3. Doughnut Chart (Chart.js): 
+            - Goal: Show Work vs. Capacity.
+            - Justification: Demonstrates that even though she works, it is a small fraction of life, supporting the disability claim.
+         4. Checkboxes (HTML/JS):
+            - Goal: Task Management.
+            - Interaction: Simple click-to-complete provides satisfaction and tracks progress.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</body>
+</html>
